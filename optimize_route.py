@@ -202,8 +202,39 @@ def solve_tsp_with_priority(
     return order
 
 
+def get_walking_route(coords: list) -> list:
+    """
+    Fetch walking route from OSRM public server.
+    coords: list of (lat, lon) tuples
+    Returns: list of (lat, lon) tuples for the walking path, or None if failed.
+    """
+    import json
+    import subprocess
+    
+    if len(coords) < 2:
+        return None
+    
+    coords_str = ";".join(f"{lon},{lat}" for lat, lon in coords)
+    url = f"https://router.project-osrm.org/route/v1/foot/{coords_str}?overview=full&geometries=geojson"
+    
+    try:
+        result = subprocess.run(
+            ["curl", "-s", "--max-time", "30", url],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0 and result.stdout:
+            data = json.loads(result.stdout)
+            if data.get("code") == "Ok" and data.get("routes"):
+                geom = data["routes"][0]["geometry"]["coordinates"]
+                return [(lat, lon) for lon, lat in geom]
+    except Exception as e:
+        print(f"Warning: Could not fetch walking route from OSRM: {e}")
+    return None
+
+
 def save_map(df_ordered: pd.DataFrame, output_path: str, df_final: pd.DataFrame = None) -> None:
-    """Save folium map with route polyline and optional final stops (informational only)."""
+    """Save folium map with walking route and optional final stops (informational only)."""
     import folium
 
     points = list(zip(df_ordered["latitude"], df_ordered["longitude"]))
@@ -217,13 +248,23 @@ def save_map(df_ordered: pd.DataFrame, output_path: str, df_final: pd.DataFrame 
     center = (np.mean(all_lats), np.mean(all_lons))
     m = folium.Map(location=center, zoom_start=12)
 
-    folium.PolyLine(
-        points,
-        color="blue",
-        weight=4,
-        opacity=0.7,
-        popup="Walkable route",
-    ).add_to(m)
+    walking_path = get_walking_route(points)
+    if walking_path:
+        folium.PolyLine(
+            walking_path,
+            color="blue",
+            weight=4,
+            opacity=0.7,
+            popup="Walking route (via OSRM)",
+        ).add_to(m)
+    else:
+        folium.PolyLine(
+            points,
+            color="blue",
+            weight=4,
+            opacity=0.7,
+            popup="Direct route (walking directions unavailable)",
+        ).add_to(m)
 
     for _, row in df_ordered.iterrows():
         stop_num = int(row["visit_order"]) if "visit_order" in row else None

@@ -1,9 +1,9 @@
 latitude,longitude,address,start,type
 40.7484,-73.9857,Empire State Building,,new
 40.7128,-74.0060,123 Main St,,new
-40.7589,-73.9851,456 5th Ave,true,reloop
+40.7589,-73.9851,456 5th Ave,,reloop
 40.7614,-73.9776,Grand Central Terminal,,reloop
-40.6892,-74.0445,Statue of Liberty,,final
+40.6892,-74.0445,Statue of Liberty,true,final
 40.7580,-73.9855,Rockefeller Center,,new
 40.7527,-73.9772,Chrysler Building,,reloop
 40.7061,-74.0087,One World Trade Center,,new
