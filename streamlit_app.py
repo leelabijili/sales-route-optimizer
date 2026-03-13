@@ -5,6 +5,7 @@ Run with: streamlit run streamlit_app.py
 """
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -71,7 +72,7 @@ with col2:
             st.error("Please upload a CSV file or use sample addresses.")
             st.stop()
         
-        cmd = ["python3", str(WORKSPACE / "optimize_route.py"), str(input_path)]
+        cmd = [sys.executable, str(WORKSPACE / "optimize_route.py"), str(input_path)]
         cmd.extend(["-o", str(WORKSPACE / "route_optimized.csv")])
         
         if max_doors:
