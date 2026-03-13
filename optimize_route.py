@@ -279,6 +279,11 @@ def main():
         default=None,
         help="Visit addresses of this type first (requires 'type' column in CSV)",
     )
+    parser.add_argument(
+        "--reverse",
+        action="store_true",
+        help="Start route from farthest point from designated start (end near start)",
+    )
     args = parser.parse_args()
 
     df = load_addresses(args.input)
@@ -298,6 +303,12 @@ def main():
     lats = df["latitude"].values
     lons = df["longitude"].values
     D = build_distance_matrix(lats, lons)
+
+    if args.reverse:
+        farthest_idx = int(np.argmax(D[start_idx]))
+        farthest_addr = df.iloc[farthest_idx].get("address", "")
+        print(f"Reverse route: starting from farthest point (row {farthest_idx}" + (f", {farthest_addr})" if farthest_addr else ")"))
+        start_idx = farthest_idx
 
     has_type_column = "type" in df.columns
     has_final_stops = has_type_column and (df["type"] == "final").any()

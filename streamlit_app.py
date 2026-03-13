@@ -56,6 +56,11 @@ with col1:
     
     generate_map = st.checkbox("Generate interactive map", value=True)
     
+    reverse_route = st.checkbox(
+        "Reverse route (start from farthest point)",
+        help="Route will start far and end near your designated start location"
+    )
+    
     run_button = st.button("🚀 Optimize Route", type="primary")
 
 with col2:
@@ -81,6 +86,8 @@ with col2:
             cmd.extend(["--priority", priority])
         if generate_map:
             cmd.extend(["--map", "--map-output", str(WORKSPACE / "route_map.html")])
+        if reverse_route:
+            cmd.append("--reverse")
         
         with st.spinner("Optimizing route..."):
             result = subprocess.run(cmd, capture_output=True, text=True, cwd=WORKSPACE)
