@@ -105,30 +105,39 @@ def load_addresses(path: str) -> pd.DataFrame:
     return df
 
 
-def apply_max_doors(df: pd.DataFrame, max_doors: int, start_idx: int) -> tuple:
+def apply_max_doors(df: pd.DataFrame, max_doors: int, start_idx: int, D: np.ndarray) -> tuple:
     """
-    Truncate addresses to max_doors, always keeping the start row.
-    Returns (truncated_df, new_start_idx).
+    Select max_doors nearest stops using nearest-neighbor from start.
+    If start is 'final' type, begins from the nearest non-final neighbor.
+    Returns (truncated_df, new_start_idx, kept_indices_in_original).
     """
     if max_doors is None or len(df) <= max_doors:
-        return df, start_idx
+        return df, start_idx, list(range(len(df)))
 
-    kept_indices = []
-    if start_idx not in kept_indices:
-        kept_indices.append(start_idx)
+    has_type = "type" in df.columns
+    
+    actual_start = start_idx
+    if has_type and df.iloc[start_idx].get("type", "").lower() == "final":
+        non_final = [i for i in range(len(df)) if df.iloc[i].get("type", "").lower() != "final"]
+        if non_final:
+            actual_start = min(non_final, key=lambda x: D[start_idx, x])
+            print(f"Start point is 'final', using nearest non-final: row {actual_start}")
 
-    for i in range(len(df)):
-        if len(kept_indices) >= max_doors:
-            break
-        if i not in kept_indices:
-            kept_indices.append(i)
+    kept_indices = [actual_start]
+    available = set(range(len(df))) - {actual_start}
+    
+    while len(kept_indices) < max_doors and available:
+        current = kept_indices[-1]
+        nearest = min(available, key=lambda x: D[current, x])
+        kept_indices.append(nearest)
+        available.remove(nearest)
 
-    kept_indices.sort()
-    df_truncated = df.iloc[kept_indices].reset_index(drop=True)
-    new_start_idx = kept_indices.index(start_idx)
+    kept_indices_sorted = sorted(kept_indices)
+    df_truncated = df.iloc[kept_indices_sorted].reset_index(drop=True)
+    new_start_idx = kept_indices_sorted.index(actual_start)
 
-    print(f"Truncated to {max_doors} stops (from {len(df)} addresses)")
-    return df_truncated, new_start_idx
+    print(f"Selected {len(kept_indices)} nearest stops (from {len(df)} addresses)")
+    return df_truncated, new_start_idx, kept_indices_sorted
 
 
 def solve_tsp_with_priority(
@@ -358,8 +367,12 @@ def main():
         addr = df.iloc[start_idx].get("address", "")
         print(f"Starting point from input file: row index {start_idx}" + (f" ({addr})" if addr else ""))
 
+    lats_full = df["latitude"].values
+    lons_full = df["longitude"].values
+    D_full = build_distance_matrix(lats_full, lons_full)
+
     if args.max_doors is not None:
-        df, start_idx = apply_max_doors(df, args.max_doors, start_idx)
+        df, start_idx, _ = apply_max_doors(df, args.max_doors, start_idx, D_full)
 
     lats = df["latitude"].values
     lons = df["longitude"].values
