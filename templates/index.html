@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Route Optimizer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+        input[type="file"]:hover {
+            border-color: #667eea;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .checkbox-group input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            width: auto;
+            display: inline-block;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        .output {
+            background: #1e1e1e;
+            color: #4ec9b0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .route-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .route-table th, .route-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .route-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+        }
+        .route-table tr:hover {
+            background: #f9f9f9;
+        }
+        .type-new {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .type-reloop {
+            background: #ffebee;
+            color: #c62828;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .map-container {
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #ddd;
+        }
+        .map-container iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+        .hidden {
+            display: none;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .info-text {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sales Route Optimizer</h1>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>Input Settings</h2>
+                <form id="optimizeForm">
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="use_sample" name="use_sample" {% if sample_exists %}checked{% endif %}>
+                            <label for="use_sample">Use sample addresses (50 NYC locations)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="fileUploadGroup">
+                        <label for="csv_file">Or upload your CSV file</label>
+                        <input type="file" id="csv_file" name="csv_file" accept=".csv">
+                        <p class="info-text">CSV must have: latitude, longitude, address, start (true on one row), type (new/reloop)</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="max_doors">Max Doors per Loop (optional)</label>
+                        <input type="number" id="max_doors" name="max_doors" min="2" placeholder="Leave empty for no limit">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="priority">Priority Type</label>
+                        <select id="priority" name="priority">
+                            <option value="">No priority (standard routing)</option>
+                            <option value="new">New addresses first</option>
+                            <option value="reloop">Reloop addresses first</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="generate_map" name="generate_map" checked>
+                            <label for="generate_map">Generate interactive map</label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="submitBtn">Optimize Route</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>Console Output</h2>
+                <div id="output" class="output">Ready to optimize...</div>
+                <div id="actions" class="hidden">
+                    <button class="btn btn-secondary" onclick="downloadCSV()">Download CSV</button>
+                    <button class="btn btn-secondary" onclick="viewSample()">View Sample CSV</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="resultsCard" class="card hidden">
+            <h2>Optimized Route</h2>
+            <div id="routeTable"></div>
+        </div>
+        
+        <div id="mapCard" class="card hidden">
+            <h2>Route Map</h2>
+            <p class="info-text">Blue pins = New | Red pins = Reloop</p>
+            <div class="map-container">
+                <iframe id="mapFrame" src=""></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('optimizeForm');
+        const output = document.getElementById('output');
+        const submitBtn = document.getElementById('submitBtn');
+        const useSample = document.getElementById('use_sample');
+        const fileUploadGroup = document.getElementById('fileUploadGroup');
+        
+        useSample.addEventListener('change', () => {
+            fileUploadGroup.style.opacity = useSample.checked ? '0.5' : '1';
+        });
+        if (useSample.checked) fileUploadGroup.style.opacity = '0.5';
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Optimizing...';
+            output.innerHTML = '<div class="loading">Processing route optimization</div>';
+            
+            document.getElementById('resultsCard').classList.add('hidden');
+            document.getElementById('mapCard').classList.add('hidden');
+            
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/optimize', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    output.innerHTML = `<span style="color: #f44336">Error: ${data.error}</span>\n${data.details || ''}`;
+                } else {
+                    output.innerHTML = data.output.join('\n') || 'Optimization complete!';
+                    document.getElementById('actions').classList.remove('hidden');
+                    
+                    if (data.route && data.route.length > 0) {
+                        renderRouteTable(data.route);
+                        document.getElementById('resultsCard').classList.remove('hidden');
+                    }
+                    
+                    if (data.has_map) {
+                        document.getElementById('mapFrame').src = '/map?' + Date.now();
+                        document.getElementById('mapCard').classList.remove('hidden');
+                    }
+                }
+            } catch (err) {
+                output.innerHTML = `<span style="color: #f44336">Error: ${err.message}</span>`;
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Optimize Route';
+        });
+        
+        function renderRouteTable(route) {
+            const table = document.createElement('table');
+            table.className = 'route-table';
+            
+            const headers = ['Stop', 'Address', 'Type', 'Coordinates'];
+            const thead = document.createElement('thead');
+            thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+            table.appendChild(thead);
+            
+            const tbody = document.createElement('tbody');
+            route.forEach(row => {
+                const typeClass = row.type === 'new' ? 'type-new' : 'type-reloop';
+                const isStart = row.start === 'True' ? ' (START)' : '';
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${row.visit_order}</strong>${isStart}</td>
+                        <td>${row.address}</td>
+                        <td><span class="${typeClass}">${row.type}</span></td>
+                        <td>${parseFloat(row.latitude).toFixed(4)}, ${parseFloat(row.longitude).toFixed(4)}</td>
+                    </tr>
+                `;
+            });
+            table.appendChild(tbody);
+            
+            document.getElementById('routeTable').innerHTML = '';
+            document.getElementById('routeTable').appendChild(table);
+        }
+        
+        function downloadCSV() {
+            window.location.href = '/download/csv';
+        }
+        
+        function viewSample() {
+            window.open('/sample', '_blank');
+        }
+    </script>
+</body>
+</html>

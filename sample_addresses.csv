@@ -1,0 +1,51 @@
+latitude,longitude,address,start,type
+40.7484,-73.9857,Empire State Building,,new
+40.7128,-74.0060,123 Main St,,new
+40.7589,-73.9851,456 5th Ave,true,reloop
+40.7614,-73.9776,Grand Central Terminal,,reloop
+40.6892,-74.0445,Statue of Liberty,,final
+40.7580,-73.9855,Rockefeller Center,,new
+40.7527,-73.9772,Chrysler Building,,reloop
+40.7061,-74.0087,One World Trade Center,,new
+40.7488,-73.9680,United Nations HQ,,reloop
+40.7794,-73.9632,Metropolitan Museum,,final
+40.7812,-73.9665,Guggenheim Museum,,reloop
+40.7829,-73.9654,Cooper Hewitt Museum,,new
+40.7516,-73.9755,NY Public Library,,reloop
+40.7549,-73.9840,Times Square,,new
+40.7587,-73.9787,St Patrick's Cathedral,,reloop
+40.7061,-73.9969,City Hall,,new
+40.7425,-74.0061,Chelsea Market,,reloop
+40.7295,-74.0025,Washington Sq Park,,new
+40.7214,-73.9878,Williamsburg Bridge,,reloop
+40.7081,-73.9571,Brooklyn Navy Yard,,new
+40.6782,-73.9442,Brooklyn Museum,,reloop
+40.6712,-73.9636,Prospect Park,,new
+40.6501,-73.9496,Brooklyn College,,reloop
+40.7033,-73.9941,DUMBO,,new
+40.6945,-73.9892,Brooklyn Heights,,reloop
+40.7282,-73.7949,Queens Center Mall,,new
+40.7561,-73.8467,Citi Field,,reloop
+40.7506,-73.8448,USTA Tennis Center,,new
+40.7678,-73.8513,Flushing Meadows Park,,reloop
+40.7436,-73.9289,Long Island City,,new
+40.7556,-73.9263,Astoria Park,,reloop
+40.8296,-73.9262,Yankee Stadium,,new
+40.8176,-73.9209,Bronx Zoo,,reloop
+40.8610,-73.8897,Bronx Botanical Garden,,new
+40.8779,-73.9063,Van Cortlandt Park,,reloop
+40.8024,-73.9668,Columbia University,,new
+40.7870,-73.9754,American Museum of Natural History,,reloop
+40.7644,-73.9730,Lincoln Center,,new
+40.7711,-73.9741,Central Park West 72nd,,reloop
+40.7968,-73.9494,Harlem 125th St,,new
+40.8168,-73.9412,Washington Heights,,reloop
+40.8684,-73.9213,Riverdale,,new
+40.7074,-73.9500,East Williamsburg,,reloop
+40.6892,-73.9819,Cobble Hill,,new
+40.6766,-73.9821,Park Slope,,reloop
+40.7243,-73.9493,Greenpoint,,new
+40.7182,-73.9568,Bedford Ave,,reloop
+40.7362,-74.0089,Meatpacking District,,new
+40.7418,-73.9895,Flatiron Building,,reloop
+40.7308,-73.9973,NoHo,,new
