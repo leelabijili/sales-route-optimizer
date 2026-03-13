@@ -141,8 +141,8 @@ def solve_tsp_with_priority(
     Multi-phase nearest-neighbor routing:
     1. Start at start_idx
     2. If priority set: visit priority type first, then other type (new/reloop)
-    3. Always visit 'final' type addresses last
-    Returns visit order (indices into df).
+    3. 'final' type addresses are excluded from routing (shown on map only)
+    Returns visit order (indices into df), excludes final stops.
     """
     if "type" not in df.columns:
         if priority:
@@ -186,32 +186,35 @@ def solve_tsp_with_priority(
         second_group.discard(j)
         order.append(j)
 
-    while final_indices:
-        i = order[-1]
-        j = min(final_indices, key=lambda x: D[i, x])
-        final_indices.discard(j)
-        order.append(j)
-
     new_count = sum(1 for idx in order if df.iloc[idx]["type"] == "new")
     reloop_count = sum(1 for idx in order if df.iloc[idx]["type"] == "reloop")
-    final_count = sum(1 for idx in order if df.iloc[idx]["type"] == "final")
+    final_count = len(df[df["type"] == "final"])
 
     if priority:
         print(f"Route: start at '{start_type}', {first_name} first ({new_count if priority == 'new' else reloop_count}), "
-              f"then {second_name} ({reloop_count if priority == 'new' else new_count}), "
-              f"then final ({final_count})")
+              f"then {second_name} ({reloop_count if priority == 'new' else new_count})")
     else:
-        print(f"Route: {new_count} new, {reloop_count} reloop, {final_count} final (visited last)")
+        print(f"Route: {new_count} new, {reloop_count} reloop ({new_count + reloop_count} total stops)")
+    
+    if final_count > 0:
+        print(f"Skipped: {final_count} final stop(s) (shown on map only)")
 
     return order
 
 
-def save_map(df_ordered: pd.DataFrame, output_path: str) -> None:
-    """Save folium map with route polyline."""
+def save_map(df_ordered: pd.DataFrame, output_path: str, df_final: pd.DataFrame = None) -> None:
+    """Save folium map with route polyline and optional final stops (informational only)."""
     import folium
 
     points = list(zip(df_ordered["latitude"], df_ordered["longitude"]))
-    center = (np.mean(df_ordered["latitude"]), np.mean(df_ordered["longitude"]))
+    
+    all_lats = list(df_ordered["latitude"])
+    all_lons = list(df_ordered["longitude"])
+    if df_final is not None and len(df_final) > 0:
+        all_lats.extend(df_final["latitude"].tolist())
+        all_lons.extend(df_final["longitude"].tolist())
+    
+    center = (np.mean(all_lats), np.mean(all_lons))
     m = folium.Map(location=center, zoom_start=12)
 
     folium.PolyLine(
@@ -225,13 +228,11 @@ def save_map(df_ordered: pd.DataFrame, output_path: str) -> None:
     for _, row in df_ordered.iterrows():
         stop_num = int(row["visit_order"]) if "visit_order" in row else None
         if stop_num is None:
-            stop_num = df_ordered.index.get_loc(row.name) + 1  # fallback if column missing
+            stop_num = df_ordered.index.get_loc(row.name) + 1
         addr = row.get("address", "")
         stop_type = row.get("type", "").lower() if "type" in row else ""
         if stop_type == "new":
             pin_color = "#2980b9"  # blue
-        elif stop_type == "final":
-            pin_color = "#27ae60"  # green
         else:
             pin_color = "#c0392b"  # red for reloop
         icon_html = (
@@ -249,6 +250,25 @@ def save_map(df_ordered: pd.DataFrame, output_path: str) -> None:
             tooltip=f"Stop {stop_num}{type_label}",
             icon=folium.DivIcon(html=icon_html, icon_size=(28, 28), icon_anchor=(14, 14)),
         ).add_to(m)
+
+    if df_final is not None and len(df_final) > 0:
+        for _, row in df_final.iterrows():
+            addr = row.get("address", "")
+            pin_color = "#27ae60"  # green
+            icon_html = (
+                f'<div style="'
+                f"background-color:{pin_color};color:#fff;border-radius:50%;"
+                f"width:28px;height:28px;display:flex;align-items:center;"
+                f"justify-content:center;font-weight:bold;font-size:14px;"
+                f'border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);'
+                f'">F</div>'
+            )
+            folium.Marker(
+                [row["latitude"], row["longitude"]],
+                popup=folium.Popup(f"<b>Final (not in route)</b><br>{addr}", max_width=250),
+                tooltip="Final (not in route)",
+                icon=folium.DivIcon(html=icon_html, icon_size=(28, 28), icon_anchor=(14, 14)),
+            ).add_to(m)
 
     m.save(output_path)
 
@@ -304,14 +324,19 @@ def main():
     lons = df["longitude"].values
     D = build_distance_matrix(lats, lons)
 
+    has_type_column = "type" in df.columns
+    df_final = df[df["type"] == "final"].copy() if has_type_column else pd.DataFrame()
+    has_final_stops = len(df_final) > 0
+
     if args.reverse:
-        farthest_idx = int(np.argmax(D[start_idx]))
+        distances = D[start_idx].copy()
+        if has_type_column:
+            final_mask = df["type"] == "final"
+            distances[final_mask] = -1
+        farthest_idx = int(np.argmax(distances))
         farthest_addr = df.iloc[farthest_idx].get("address", "")
         print(f"Reverse route: starting from farthest point (row {farthest_idx}" + (f", {farthest_addr})" if farthest_addr else ")"))
         start_idx = farthest_idx
-
-    has_type_column = "type" in df.columns
-    has_final_stops = has_type_column and (df["type"] == "final").any()
 
     if args.priority or has_final_stops:
         order = solve_tsp_with_priority(df, D, start_idx, args.priority)
@@ -335,7 +360,7 @@ def main():
     if args.map:
         map_path = Path(args.map_output)
         map_path.parent.mkdir(parents=True, exist_ok=True)
-        save_map(df_ordered, str(map_path))
+        save_map(df_ordered, str(map_path), df_final)
         print(f"Map saved to: {map_path}")
 
 
